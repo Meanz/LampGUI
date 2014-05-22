@@ -1,7 +1,10 @@
 package com.meanworks.lampgui;
 
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.ListIterator;
 
 import com.meanworks.lampgui.event.MouseEvent;
 
@@ -21,6 +24,19 @@ public class LampGUI {
 	 * The list of components
 	 */
 	private static HashMap<String, Component> components = new HashMap<String, Component>();
+
+	/**
+	 * The render order of the components
+	 */
+	private static LinkedList<Component> renderOrder = new LinkedList<Component>();
+
+	/**
+	 * Add and remove queues
+	 */
+	private static LinkedList<Component> addQueue = new LinkedList<Component>();
+	private static LinkedList<Component> removeQueue = new LinkedList<Component>();
+	private static LinkedList<Component> toFrontQueue = new LinkedList<Component>();
+	private static LinkedList<Component> toBackQueue = new LinkedList<Component>();
 
 	/**
 	 * Initializes the Lamp GUI
@@ -65,6 +81,42 @@ public class LampGUI {
 	}
 
 	/**
+	 * Remove the component from all registries
+	 * 
+	 * @param component
+	 */
+	public static void dispose(Component component) {
+		if (component == null) {
+			return;
+		}
+		removeQueue.add(component);
+	}
+
+	/**
+	 * Move the given component to the front of the render list
+	 * 
+	 * @param component
+	 */
+	public static void toFront(Component component) {
+		if (component == null) {
+			return;
+		}
+		toFrontQueue.add(component);
+	}
+
+	/**
+	 * Move the given component to the back of the render list
+	 * 
+	 * @param component
+	 */
+	public static void toBack(Component component) {
+		if (component == null) {
+			return;
+		}
+		toBackQueue.add(component);
+	}
+
+	/**
 	 * Get the renderer to use for the built in components
 	 * 
 	 * @return
@@ -92,8 +144,7 @@ public class LampGUI {
 		if (component == null) {
 			throw new GUIException("Given component is null");
 		}
-		components.put(component.getName(), component);
-
+		addQueue.add(component);
 	}
 
 	/**
@@ -105,13 +156,16 @@ public class LampGUI {
 		 */
 		List<MouseEvent> mouseEvents = inputHandler.getMouseEvents();
 		for (MouseEvent event : mouseEvents) {
-			for (Component component : components.values()) {
+			ListIterator<Component> it = renderOrder.listIterator(renderOrder
+					.size());
+			while (it.hasPrevious()) {
+				Component component = it.previous();
 				if (component.fireMouseEvent(event)) {
+					System.out.println("Component: " + component.getName() + " ate the message.");
 					break; // don't send the mouse event to any other components
 				}
 			}
 		}
-		
 		inputHandler.update();
 	}
 
@@ -119,9 +173,7 @@ public class LampGUI {
 	 * Update all the gui components
 	 */
 	public static void update() {
-
 		updateInput();
-
 		for (Component component : components.values()) {
 			component.fireUpdate();
 		}
@@ -131,8 +183,39 @@ public class LampGUI {
 	 * Render all the gui components
 	 */
 	public static void render() {
-		for (Component component : components.values()) {
-			component.fireRender();
+		// Complete queue updates
+		if (toFrontQueue.size() > 0) {
+			for (Component component : toFrontQueue) {
+				renderOrder.remove(component);
+				renderOrder.addLast(component);
+			}
+			toFrontQueue.clear();
+		}
+		if (toBackQueue.size() > 0) {
+			for (Component component : toBackQueue) {
+				renderOrder.remove(component);
+				renderOrder.addFirst(component);
+			}
+			toBackQueue.clear();
+		}
+		if (addQueue.size() > 0) {
+			for (Component component : addQueue) {
+				components.put(component.getName(), component);
+				renderOrder.addLast(component);
+			}
+			addQueue.clear();
+		}
+		if (removeQueue.size() > 0) {
+			for (Component component : removeQueue) {
+				renderOrder.remove(component);
+				components.remove(component.getName());
+			}
+			removeQueue.clear();
+		}
+
+		// Render
+		for (Component component : renderOrder) {
+			component.fireRender(renderer);
 		}
 	}
 }

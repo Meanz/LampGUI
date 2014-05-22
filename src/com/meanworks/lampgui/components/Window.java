@@ -3,6 +3,7 @@ package com.meanworks.lampgui.components;
 import java.awt.Color;
 
 import com.meanworks.lampgui.Component;
+import com.meanworks.lampgui.GUIException;
 import com.meanworks.lampgui.LampGUI;
 import com.meanworks.lampgui.GUIRenderer;
 import com.meanworks.lampgui.event.MouseClickEvent;
@@ -52,6 +53,28 @@ public class Window extends Component {
 	public Window(String title, int x, int y, int width, int height) {
 		super(LampGUI.generateName("window_"), x, y, width, height);
 		this.title = title;
+
+		// Add a close button to this window
+		final Window window = this;
+		Button button = new Button(" X", getWidth() - 16, 0, 16, titleBarHeight) {
+
+			@Override
+			public void onClick() {
+				window.dispose();
+			}
+
+		};
+		
+		Button button2 = new Button("Click Me!", 15, 25, 80, 24);
+		
+		
+		try {
+			this.addChild(button);
+			this.addChild(button2);
+		} catch (GUIException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	/**
@@ -153,9 +176,6 @@ public class Window extends Component {
 	 */
 	@Override
 	public boolean onMouseClick(MouseClickEvent mouseEvent) {
-		System.err.println("Mouse Click! Button: " + mouseEvent.getButton()
-				+ " Pressed: " + mouseEvent.isPressed() + " X: "
-				+ mouseEvent.getX() + " Y: " + mouseEvent.getY());
 		if (mouseEvent.getButton() == 0 && mouseEvent.isPressed()
 				&& isInside(mouseEvent)) {
 			// If we are inside title bar
@@ -164,6 +184,10 @@ public class Window extends Component {
 				dragging = true;
 				dragX = mouseEvent.getX() - getX();
 				dragY = mouseEvent.getY() - getY();
+				toFront();
+				return true;
+			} else {
+				toFront();
 				return true;
 			}
 		} else if (mouseEvent.getButton() == 0 && !mouseEvent.isPressed()) {
@@ -190,30 +214,23 @@ public class Window extends Component {
 	 * @see com.meanworks.lampgui.Component#render()
 	 */
 	@Override
-	public void render() {
-
-		/*
-		 * We can't render without a renderer
-		 */
-		if (LampGUI.getRenderer() == null) {
-			return;
-		}
-
-		GUIRenderer g = LampGUI.getRenderer();
+	public void render(GUIRenderer renderer) {
 
 		// Render Background
-		g.fillRectangle(getX(), getY(), getWidth(), getHeight(), bgColor);
+		renderer.fillRectangle(getX(), getY(), getWidth(), getHeight(), bgColor);
 
 		// Render Border
-		g.drawRectangle(getX(), getY(), getWidth(), getHeight(), borderColor);
+		renderer.drawRectangle(getX(), getY(), getWidth(), getHeight(),
+				borderColor);
 
 		// Render Title bar ?
-		g.drawRectangle(getX(), getY(), getWidth(), titleBarHeight, borderColor);
+		renderer.drawRectangle(getX(), getY(), getWidth(), titleBarHeight,
+				borderColor);
 
 		// Render Title
 		// g.drawString(title, getX() + (getWidth() / 2) -
 		// g.getTextLength(title), getY() + g.getTextHeight(), textColor);
-		g.drawString(title, getX() + (getWidth() / 2) - 45, getY(),
+		renderer.drawString(title, getX() + (getWidth() / 2) - 45, getY(),
 				textColor);
 	}
 

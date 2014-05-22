@@ -3,6 +3,8 @@ package com.meanworks.lampgui;
 import java.awt.Dimension;
 import java.awt.Point;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.ListIterator;
 
 import com.meanworks.lampgui.event.MouseClickEvent;
 import com.meanworks.lampgui.event.MouseEvent;
@@ -34,6 +36,16 @@ public abstract class Component {
 	 * The children of this component
 	 */
 	private HashMap<String, Component> children = new HashMap<String, Component>();
+
+	/**
+	 * The render order of this component's children
+	 */
+	private LinkedList<Component> renderOrder = new LinkedList<Component>();
+
+	/**
+	 * Whether this component is disposed or not
+	 */
+	private boolean disposed = false;
 
 	/**
 	 * Construct a new Component
@@ -77,6 +89,88 @@ public abstract class Component {
 	}
 
 	/**
+	 * Whether this component is disposed or not
+	 * 
+	 * @return
+	 */
+	public boolean isDisposed() {
+		return disposed;
+	}
+
+	/**
+	 * Remove the component from all registries
+	 * 
+	 * @param component
+	 */
+	public void dispose(Component component) {
+		if (component == null) {
+			return;
+		}
+		renderOrder.remove(component);
+		children.remove(component.getName());
+	}
+
+	/**
+	 * Dispose of this component
+	 */
+	public void dispose() {
+		disposed = true;
+		if (parent != null) {
+			parent.dispose(this);
+		} else {
+			LampGUI.dispose(this);
+		}
+	}
+
+	/**
+	 * Move this component to the back of the render order
+	 * 
+	 * @param component
+	 */
+	public void toBack(Component component) {
+		if (component == null) {
+			return;
+		}
+		renderOrder.remove(component);
+		renderOrder.addFirst(component);
+	}
+
+	/**
+	 * Move the given component to the front of the render order
+	 * 
+	 * @param component
+	 */
+	public void toFront(Component component) {
+		if (component == null) {
+			return;
+		}
+		renderOrder.remove(component);
+		renderOrder.addLast(component);
+	}
+
+	/**
+	 * Send this component to the front of the render order
+	 */
+	public void toFront() {
+		if (parent == null) {
+			LampGUI.toFront(this);
+		} else {
+			parent.toFront(this);
+		}
+	}
+
+	/**
+	 * Send this component to the back of the render order
+	 */
+	public void toBack() {
+		if (parent == null) {
+			LampGUI.toBack(this);
+		} else {
+			parent.toBack(this);
+		}
+	}
+
+	/**
 	 * Get the parent of this component
 	 * 
 	 * @return
@@ -97,6 +191,7 @@ public abstract class Component {
 		}
 		child.parent = this;
 		children.put(child.getName(), child);
+		renderOrder.add(child);
 	}
 
 	/**
@@ -123,7 +218,13 @@ public abstract class Component {
 	 * @return
 	 */
 	public int getX() {
-		return x;
+		int _x = 0;
+		Component p = parent;
+		while (p != null) {
+			_x += p.getAbsX();
+			p = p.parent;
+		}
+		return _x + x;
 	}
 
 	/**
@@ -132,6 +233,30 @@ public abstract class Component {
 	 * @return
 	 */
 	public int getY() {
+		int _y = 0;
+		Component p = parent;
+		while (p != null) {
+			_y += p.getAbsY();
+			p = p.parent;
+		}
+		return _y + y;
+	}
+
+	/**
+	 * Get the absolute x value
+	 * 
+	 * @return
+	 */
+	public int getAbsX() {
+		return x;
+	}
+
+	/**
+	 * Get the absolute x value
+	 * 
+	 * @return
+	 */
+	public int getAbsY() {
 		return y;
 	}
 
@@ -250,8 +375,8 @@ public abstract class Component {
 	public boolean onMouseEvent(MouseEvent mouseEvent) {
 		if (mouseEvent instanceof MouseClickEvent) {
 			return onMouseClick((MouseClickEvent) mouseEvent);
-		} else if(mouseEvent instanceof MouseMoveEvent){
-			return onMouseMove((MouseMoveEvent)mouseEvent);
+		} else if (mouseEvent instanceof MouseMoveEvent) {
+			return onMouseMove((MouseMoveEvent) mouseEvent);
 		} else {
 			return false;
 		}
@@ -263,13 +388,16 @@ public abstract class Component {
 	 * @param mouseEvent
 	 */
 	public final boolean fireMouseEvent(MouseEvent mouseEvent) {
-		if (onMouseEvent(mouseEvent)) {
-			return true;
-		}
-		for (Component child : children.values()) {
+		ListIterator<Component> it = renderOrder.listIterator(renderOrder
+				.size());
+		while (it.hasPrevious()) {
+			Component child = it.previous();
 			if (child.fireMouseEvent(mouseEvent)) {
 				return true;
 			}
+		}
+		if (onMouseEvent(mouseEvent)) {
+			return true;
 		}
 		return false;
 	}
@@ -278,24 +406,20 @@ public abstract class Component {
 	 * Update this component and all it's sub components
 	 */
 	public final void fireUpdate() {
-
 		update();
 		for (Component child : children.values()) {
 			child.fireUpdate();
 		}
-
 	}
 
 	/**
 	 * Render this component and all it's sub components
 	 */
-	public final void fireRender() {
-
-		render();
-		for (Component child : children.values()) {
-			child.fireRender();
+	public final void fireRender(GUIRenderer renderer) {
+		render(renderer);
+		for (Component child : renderOrder) {
+			child.fireRender(renderer);
 		}
-
 	}
 
 	/**
@@ -306,6 +430,6 @@ public abstract class Component {
 	/**
 	 * Renders the component
 	 */
-	public abstract void render();
+	public abstract void render(GUIRenderer renderer);
 
 }

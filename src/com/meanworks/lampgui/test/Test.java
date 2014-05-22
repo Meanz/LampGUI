@@ -1,7 +1,6 @@
 package com.meanworks.lampgui.test;
 
 import java.awt.Color;
-import java.awt.event.KeyEvent;
 
 import org.lwjgl.input.Keyboard;
 
@@ -17,6 +16,7 @@ import com.meanworks.lamp2d.SpriteLoader;
 import com.meanworks.lampgui.GUIException;
 import com.meanworks.lampgui.GUIInputHandler;
 import com.meanworks.lampgui.LampGUI;
+import com.meanworks.lampgui.components.Menu;
 import com.meanworks.lampgui.components.Window;
 
 public class Test implements Application {
@@ -41,6 +41,11 @@ public class Test implements Application {
 	 */
 	private State gameState;
 
+	/**
+	 * The menu if it's open
+	 */
+	private Menu menu;
+
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -51,15 +56,37 @@ public class Test implements Application {
 		bg = SpriteLoader.loadSprite("./data/gui/loading_bg.png");
 		gameState = State.PLAYING;
 
-		Window window = new Window("Test Window", 10, 10, 300, 350);
-
 		try {
-			
+
 			GUIInputHandler inputHandler = new GUIInputHandler();
-			Lamp2DGUIInputAdapter adapter = new Lamp2DGUIInputAdapter(inputHandler);
+			Lamp2DGUIInputAdapter adapter = new Lamp2DGUIInputAdapter(
+					inputHandler);
 			Input.addMouseListener(adapter);
-			LampGUI.init(new Lamp2DGUIRenderer(Game.getRenderer()), inputHandler);
+			LampGUI.init(new Lamp2DGUIRenderer(Game.getRenderer()),
+					inputHandler);
+
+			Window window = new Window("Test Window", 10, 10, 300, 350);
 			LampGUI.addComponent(window);
+
+			window = new Window("Test Window 2", 10, 10, 300, 400);
+			LampGUI.addComponent(window);
+
+			// Add a random menu
+			Menu menu = new Menu(new String[] { "Test", "Orange", "Perk",
+					"Horse"
+
+			}, "Menu Test", 500, 40) {
+
+				@Override
+				public void onOptionClick(int option) {
+					// TODO Auto-generated method stub
+					super.onOptionClick(option);
+				}
+
+			};
+
+			LampGUI.addComponent(menu);
+
 		} catch (GUIException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -87,8 +114,6 @@ public class Test implements Application {
 			System.err.println("KEY A Released.");
 		}
 
-		
-
 		if (gameState == State.PLAYING) {
 		}
 	}
@@ -106,12 +131,47 @@ public class Test implements Application {
 		renderer.drawLine(100, 100, 200, 100);
 		renderer.draw(bg, 0, 0);
 		renderer.drawString("Hello there, Woop!", 20, 50);
-		
-		//Render fps
+
+		// Render fps
 		renderer.drawString("FPS: " + Game.getFPS(), 5, 5);
-		
+
 		LampGUI.update();
 		LampGUI.render();
+
+		if (Input.isMousePressed(1)) {
+			// Create a menu
+			if (menu == null || menu.isDisposed()) {
+				menu = new Menu(new String[] { "Create Window", "Clear All",
+						"Cancel" }, "GUI Menu", Input.getMouseX() - 75,
+						Input.getMouseY() - 25) {
+
+					@Override
+					public void onOptionClick(int option) {
+						if (option == 0) {
+							// Add a window
+							Window window = new Window("New Window", 50, 50,
+									200, 250);
+							try {
+								LampGUI.addComponent(window);
+							} catch (GUIException exception) {
+								exception.printStackTrace();
+							}
+							dispose();
+						} else if (option == 2) {
+							dispose();
+						}
+					}
+
+				};
+
+				try {
+					LampGUI.addComponent(menu);
+				} catch (GUIException exception) {
+					exception.printStackTrace();
+				}
+			}
+
+		}
 
 		if (gameState == State.PLAYING) {
 
