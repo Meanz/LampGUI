@@ -64,10 +64,9 @@ public class Window extends Component {
 			}
 
 		};
-		
+
 		Button button2 = new Button("Click Me!", 15, 25, 80, 24);
-		
-		
+
 		try {
 			this.addChild(button);
 			this.addChild(button2);
@@ -185,15 +184,19 @@ public class Window extends Component {
 				dragX = mouseEvent.getX() - getX();
 				dragY = mouseEvent.getY() - getY();
 				toFront();
+				setFocus();
 				return true;
 			} else {
 				toFront();
 				return true;
 			}
 		} else if (mouseEvent.getButton() == 0 && !mouseEvent.isPressed()) {
-			bgColor = Color.gray;
-			dragging = false;
-			return true;
+			if (dragging) {
+				bgColor = Color.gray;
+				dragging = false;
+				unfocus();
+				return true;
+			}
 		}
 		return false;
 	}

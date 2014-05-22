@@ -69,15 +69,18 @@ public class Button extends Component {
 				&& isInside(mouseEvent)) {
 			bgColor = Color.green;
 			isPressed = true;
+			setFocus();
 			toFront();
 			return true;
 		} else if (isPressed && mouseEvent.getButton() == 0) {
 			if (isInside(mouseEvent)) {
 				onClick();
 				bgColor = Color.gray;
+				unfocus();
 				return true;
 			} else {
 				bgColor = Color.gray;
+				unfocus();
 			}
 		}
 		return false;

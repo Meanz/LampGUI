@@ -123,6 +123,22 @@ public abstract class Component {
 	}
 
 	/**
+	 * Set the focus to this component
+	 */
+	public void setFocus() {
+		LampGUI.setFocus(this);
+	}
+
+	/**
+	 * Unfocus this component
+	 */
+	public void unfocus() {
+		if (LampGUI.getFocus() == this) {
+			LampGUI.setFocus(null);
+		}
+	}
+
+	/**
 	 * Move this component to the back of the render order
 	 * 
 	 * @param component

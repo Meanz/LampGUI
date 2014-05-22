@@ -1,7 +1,7 @@
 package com.meanworks.lampgui;
 
+import java.awt.Color;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
@@ -37,6 +37,11 @@ public class LampGUI {
 	private static LinkedList<Component> removeQueue = new LinkedList<Component>();
 	private static LinkedList<Component> toFrontQueue = new LinkedList<Component>();
 	private static LinkedList<Component> toBackQueue = new LinkedList<Component>();
+
+	/**
+	 * The focus component
+	 */
+	private static Component focusComponent = null;
 
 	/**
 	 * Initializes the Lamp GUI
@@ -78,6 +83,24 @@ public class LampGUI {
 			nameId = 0;
 		}
 		return prefix + (nameId++);
+	}
+
+	/**
+	 * The focus component
+	 * 
+	 * @return
+	 */
+	public static Component getFocus() {
+		return focusComponent;
+	}
+
+	/**
+	 * Set the focus component
+	 * 
+	 * @param component
+	 */
+	public static void setFocus(Component component) {
+		focusComponent = component;
 	}
 
 	/**
@@ -156,12 +179,18 @@ public class LampGUI {
 		 */
 		List<MouseEvent> mouseEvents = inputHandler.getMouseEvents();
 		for (MouseEvent event : mouseEvents) {
+			if (focusComponent != null) {
+				if (focusComponent.fireMouseEvent(event)) {
+					continue;
+				}
+			}
 			ListIterator<Component> it = renderOrder.listIterator(renderOrder
 					.size());
 			while (it.hasPrevious()) {
 				Component component = it.previous();
 				if (component.fireMouseEvent(event)) {
-					System.out.println("Component: " + component.getName() + " ate the message.");
+					System.out.println("Component: " + component.getName()
+							+ " ate the message.");
 					break; // don't send the mouse event to any other components
 				}
 			}
@@ -212,6 +241,12 @@ public class LampGUI {
 			}
 			removeQueue.clear();
 		}
+
+		// Draw some debug information
+		if (renderer != null)
+			renderer.drawString(
+					"Focus: " + (focusComponent != null ? focusComponent
+							.getName() : "null"), 10, 25, Color.WHITE);
 
 		// Render
 		for (Component component : renderOrder) {
